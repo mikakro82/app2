@@ -3,16 +3,31 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Börsen-Multi-Analyse (Sandbox)</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>📈 Börsen-Analyse (Basis-Version)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 6px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
 <body>
-    <h1>📊 Börsen-Analyse (mehrere Aktien)</h1>
-    <input type="text" id="symbolsInput" placeholder="z.B. AAPL, MSFT, TSLA" />
-    <button onclick="loadAll()">🔄 Analysieren</button>
+    <h1>📊 Börsen-Analyse (Basis-Version)</h1>
+    <input id="symbolsInput" type="text" placeholder="z. B. AAPL, MSFT, TSLA" />
+    <button onclick="loadAll()">🔍 Analysieren</button>
     <div id="results"></div>
+    <canvas id="chart" width="600" height="300"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
 </body>
-<script src="script.js"></script>
 </html>
