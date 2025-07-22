@@ -1,1 +1,19 @@
+name: Täglich automatisch ausführen
 
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-python-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v3
+      - name: Python installieren
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Skript ausführen
+        run: python DAX.py
