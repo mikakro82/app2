@@ -2,32 +2,37 @@ name: Alle 10 Minuten Mo–Fr (07–21 Uhr DE)
 
 on:
   schedule:
-    - cron: '0,10,20,30,40,50 5 * * 1-5'   # 07:00 DE (05:00 UTC)
-    - cron: '0,10,20,30,40,50 6 * * 1-5'   # 08:00
-    - cron: '0,10,20,30,40,50 7 * * 1-5'   # 09:00
-    - cron: '0,10,20,30,40,50 8 * * 1-5'   # 10:00
-    - cron: '0,10,20,30,40,50 9 * * 1-5'   # 11:00
-    - cron: '0,10,20,30,40,50 10 * * 1-5'  # 12:00
-    - cron: '0,10,20,30,40,50 11 * * 1-5'  # 13:00
-    - cron: '0,10,20,30,40,50 12 * * 1-5'  # 14:00
-    - cron: '0,10,20,30,40,50 13 * * 1-5'  # 15:00
-    - cron: '0,10,20,30,40,50 14 * * 1-5'  # 16:00
-    - cron: '0,10,20,30,40,50 15 * * 1-5'  # 17:00
-    - cron: '0,10,20,30,40,50 16 * * 1-5'  # 18:00
-    - cron: '0,10,20,30,40,50 17 * * 1-5'  # 19:00
-    - cron: '0,10,20,30,40,50 18 * * 1-5'  # 20:00
-    - cron: '0,10,20,30,40,50 19 * * 1-5'  # 21:00
+    - cron: '0,10,20,30,40,50 5 * * 1-5'
+    - cron: '0,10,20,30,40,50 6 * * 1-5'
+    - cron: '0,10,20,30,40,50 7 * * 1-5'
+    - cron: '0,10,20,30,40,50 8 * * 1-5'
+    - cron: '0,10,20,30,40,50 9 * * 1-5'
+    - cron: '0,10,20,30,40,50 10 * * 1-5'
+    - cron: '0,10,20,30,40,50 11 * * 1-5'
+    - cron: '0,10,20,30,40,50 12 * * 1-5'
+    - cron: '0,10,20,30,40,50 13 * * 1-5'
+    - cron: '0,10,20,30,40,50 14 * * 1-5'
+    - cron: '0,10,20,30,40,50 15 * * 1-5'
+    - cron: '0,10,20,30,40,50 16 * * 1-5'
+    - cron: '0,10,20,30,40,50 17 * * 1-5'
+    - cron: '0,10,20,30,40,50 18 * * 1-5'
+    - cron: '0,10,20,30,40,50 19 * * 1-5'
   workflow_dispatch:
 
 jobs:
-  job:
+  telegram-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Code auschecken
+      - name: Repository auschecken
         uses: actions/checkout@v3
+
       - name: Python installieren
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - name: Skript ausführen
+
+      - name: Abhängigkeiten installieren
+        run: pip install requests
+
+      - name: Telegram-Signal senden
         run: python DAX.py
