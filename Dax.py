@@ -53,5 +53,5 @@ if __name__ == "__main__":
     print("🚀 Starte Headless DAX-FVG-Bot...")
     send_start_message()
     run_once()
-    time.sleep(60)
+    time.sleep(860)
     shutdown()
