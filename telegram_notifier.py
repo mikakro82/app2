@@ -1,15 +1,26 @@
-
 import requests
 from datetime import datetime, timedelta
 import json
 import os
 
-BOT_TOKEN = "8170146997:AAE5P3SIi_L06iYkke35s7A1EP77KftkWVI"
-CHAT_ID = "1596720374"
+# Für lokale Tests .env laden
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+# Sicher über Umgebungsvariablen (GitHub Secrets oder .env)
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 LOG_FILE = "signal_log.json"
 
 def send_telegram_message(message):
+    if not BOT_TOKEN or not CHAT_ID:
+        print("❌ Telegram-Konfiguration fehlt (TOKEN oder CHAT_ID)")
+        return
+
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     data = {
         "chat_id": CHAT_ID,
@@ -22,11 +33,14 @@ def send_telegram_message(message):
         print("Telegram Error:", e)
 
 def send_telegram_signal(entry, sl, tp, direction, time):
-    risk = abs(entry - sl)
-    reward = abs(tp - entry)
-    rr_ratio = round(reward / risk, 2)
-    sl_pct = round((risk / entry) * 100, 2)
-    tp_pct = round((reward / entry) * 100, 2)
+    try:
+        risk = abs(entry - sl)
+        reward = abs(tp - entry)
+        rr_ratio = round(reward / risk, 2)
+        sl_pct = round((risk / entry) * 100, 2)
+        tp_pct = round((reward / entry) * 100, 2)
+    except ZeroDivisionError:
+        risk, reward, rr_ratio, sl_pct, tp_pct = 0, 0, 0, 0, 0
 
     message = (
         f"📊 *FVG {direction.upper()} Signal*\n"
@@ -37,13 +51,11 @@ def send_telegram_signal(entry, sl, tp, direction, time):
         f"📐 CRV: `{rr_ratio}:1`"
     )
     save_signal_log(time, entry, sl, tp)
-
     send_telegram_message(message)
 
 def save_signal_log(time, entry, sl, tp):
-    now = datetime.now().isoformat()
     result = {
-        "time": time.isoformat(),
+        "time": time.isoformat() if hasattr(time, "isoformat") else str(time),
         "entry": entry,
         "sl": sl,
         "tp": tp,
