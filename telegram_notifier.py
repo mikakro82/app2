@@ -90,4 +90,4 @@ def update_signal_result(price_now):
         return
 
     changed = False
-    with open(LOG_FILE, "r", encoding="
+    with open(LOG_FILE, "r", encoding="utf-8") as f:
