@@ -89,9 +89,73 @@ def update_signal_result(price_now):
     if not os.path.exists(LOG_FILE):
         return
 
-    changed = False
+    # Dateien lesen
     with open(LOG_FILE, "r", encoding="utf-8") as f:
-    try:
-        data = json.load(f)
-    except:
-        data = []
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            data = []
+
+    changed = False
+    for signal in data:
+        if signal["status"] == "pending":
+            if price_now >= signal["tp"]:
+                signal["status"] = "take_profit"
+                signal["triggered_at"] = datetime.now().isoformat()
+                send_telegram_message(
+                    f"✅ *Take Profit erreicht!*\nEntry: `{signal['entry']}` → TP: `{signal['tp']}`"
+                )
+                changed = True
+            elif price_now <= signal["sl"]:
+                signal["status"] = "stop_loss"
+                signal["triggered_at"] = datetime.now().isoformat()
+                send_telegram_message(
+                    f"🛑 *Stop Loss erreicht!*\nEntry: `{signal['entry']}` → SL: `{signal['sl']}`"
+                )
+                changed = True
+
+    # Änderungen persistieren
+    if changed:
+        with open(LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+
+def send_daily_summary():
+    """Sendet eine tägliche Telegram-Zusammenfassung."""
+    if not os.path.exists(LOG_FILE):
+        send_telegram_message("📊 Keine Signale für Tagesauswertung gefunden.")
+        return
+
+    with open(LOG_FILE, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            data = []
+
+    now = datetime.now()
+    stats = {"day": {"tp": 0, "sl": 0},
+             "week": {"tp": 0, "sl": 0},
+             "month": {"tp": 0, "sl": 0},
+             "year": {"tp": 0, "sl": 0}}
+
+    for s in data:
+        if s["status"] in ["take_profit", "stop_loss"]:
+            t = datetime.fromisoformat(s["triggered_at"])
+            for k, delta in [
+                ("day", timedelta(days=1)),
+                ("week", timedelta(weeks=1)),
+                ("month", timedelta(days=31)),
+                ("year", timedelta(days=365)),
+            ]:
+                if now - t <= delta:
+                    stats[k]["tp" if s["status"] == "take_profit" else "sl"] += 1
+
+    summary = (
+        f"📈 *Tagesauswertung {now.strftime('%d.%m.%Y')}*\n"
+        f"📅 Heute: ✅ {stats['day']['tp']} TP | 🛑 {stats['day']['sl']} SL\n"
+        f"🗓️ Woche: ✅ {stats['week']['tp']} TP | 🛑 {stats['week']['sl']} SL\n"
+        f"📆 Monat: ✅ {stats['month']['tp']} TP | 🛑 {stats['month']['sl']} SL\n"
+        f"📊 Jahr: ✅ {stats['year']['tp']} TP | 🛑 {stats['year']['sl']} SL"
+    )
+
+    send_telegram_message(summary)
