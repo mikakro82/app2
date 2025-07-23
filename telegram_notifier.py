@@ -91,3 +91,7 @@ def update_signal_result(price_now):
 
     changed = False
     with open(LOG_FILE, "r", encoding="utf-8") as f:
+    try:
+        data = json.load(f)
+    except:
+        data = []
