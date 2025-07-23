@@ -1,73 +1,102 @@
-import time
-import os
-import signal
+
 import yfinance as yf
-from datetime import datetime
-from telegram_notifier import send_telegram_signal  # du brauchst diese Datei mit dieser Funktion
+import pandas as pd
+from datetime import datetime, timedelta
+from telegram_notifier import send_telegram_signal, update_signal_result, send_daily_summary
 
-# ✅ Starte-Info an Telegram senden
-def send_start_message():
+def get_dax_etf_xdax(interval='60m'):
     try:
-        send_telegram_signal(0, 0, 0, "info", "🚀 DAX-FVG-Bot gestartet – einmalige Analyse läuft.")
-    except Exception as e:
-        print(f"⚠️ Konnte Startmeldung nicht senden: {e}")
-
-# 📊 Holt XDAX.L-Daten (1-Tageszeitraum, 60m-Kerzen)
-def get_dax_data():
-    try:
-        ticker = yf.Ticker("XDAX.L")
-        df = ticker.history(period="1d", interval="60m")
+        ticker = yf.Ticker("XDAX.L")  # Xtrackers DAX ETF an der LSE
+        df = ticker.history(period="1d", interval=interval)
         if df.empty:
-            print("⚠️ Keine Daten von XDAX.L erhalten.")
+            print("Keine Daten empfangen für XDAX.L.")
             return None
-        print(f"📊 {len(df)} Kerzen empfangen ({datetime.now().strftime('%H:%M:%S')})")
-        return df[['Open', 'High', 'Low', 'Close']].between_time("08:00", "17:00")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {len(df)} Kerzen geladen von XDAX.L.")
+        return df[['Open', 'High', 'Low', 'Close']]
     except Exception as e:
-        print("❌ Fehler beim Abrufen der Daten:", e)
+        print("Fehler beim Laden der XDAX.L Daten:", e)
         return None
 
-# 🔍 FVG-Logik
 def detect_fvg(df):
     fvg_rows = []
     for i in range(1, len(df)-1):
-        prev = df.iloc[i - 1]
-        next_ = df.iloc[i + 1]
-        if prev['High'] < next_['Low']:
-            fvg_rows.append((i, 'bullish', prev['High'], next_['Low']))
-        elif prev['Low'] > next_['High']:
-            fvg_rows.append((i, 'bearish', next_['High'], prev['Low']))
+        prev_candle = df.iloc[i - 1]
+        next_candle = df.iloc[i + 1]
+
+        if prev_candle['High'] < next_candle['Low']:
+            fvg_rows.append((i, 'bullish', prev_candle['High'], next_candle['Low']))
+        elif prev_candle['Low'] > next_candle['High']:
+            fvg_rows.append((i, 'bearish', next_candle['High'], prev_candle['Low']))
     return fvg_rows
 
-# 🔁 Einmalige Strategieauswertung
-def run_once():
-    df = get_dax_data()
+def evaluate_fvg_strategy():
+    df = get_dax_etf_xdax()
     if df is None or df.empty:
-        print("⛔ Abbruch: Keine Daten verfügbar.")
+        print("Keine Daten geladen.")
         return
 
+    df = df.between_time("08:00", "17:00")  # Handelszeit LSE in deutscher Zeit
     fvg_list = detect_fvg(df)
+
     if not fvg_list:
-        print("🔍 Keine Fair Value Gaps gefunden.")
+        print("Keine FVG erkannt.")
         return
 
-    print(f"✅ {len(fvg_list)} FVGs erkannt.")
-    for i, typ, fvg_low, fvg_high in fvg_list:
-        if i + 1 >= len(df): continue
-        entry = df.iloc[i + 1]['Close']
-        sl = fvg_low if typ == 'bullish' else fvg_high
-        tp = entry + 2 * abs(entry - sl) if typ == 'bullish' else entry - 2 * abs(entry - sl)
-        zeit = df.index[i + 1]
-        print(f"📤 {typ.upper()} FVG @ {zeit}: Entry={entry:.2f}, SL={sl:.2f}, TP={tp:.2f}")
-        send_telegram_signal(entry, sl, tp, typ, zeit)
+    print(f"Gefundene FVGs ({len(fvg_list)}):")
+    for i, fvg_type, fvg_low, fvg_high in fvg_list:
+        entry_candle = df.iloc[i + 1]
+        sl = fvg_low if fvg_type == 'bullish' else fvg_high
+        tp = entry_candle['Close'] + 2 * abs(entry_candle['Close'] - sl) if fvg_type == 'bullish' else entry_candle['Close'] - 2 * abs(entry_candle['Close'] - sl)
+        print(f"{fvg_type.upper()} FVG bei {entry_candle.name}: Entry={entry_candle['Close']:.2f}, SL={sl:.2f}, TP={tp:.2f}")
+        send_telegram_signal(entry_candle['Close'], sl, tp, fvg_type, entry_candle.name)
 
-# ⏱️ 1-Minuten-Shutdown
-def shutdown():
-    print("⏱️ 60 Sekunden vorbei – beende das Programm.")
-    os.kill(os.getpid(), signal.SIGTERM)
+def run_with_monitoring():
+    df = get_dax_etf_xdax()
+    if df is None or df.empty:
+        print("Keine Daten empfangen.")
+        return
 
-# ▶️ Main-Block
+    last_price = df['Close'].iloc[-1]
+    update_signal_result(last_price)
+
+    now = datetime.now()
+    if now.strftime("%H:%M") == "17:00":
+        send_daily_summary()
+
 if __name__ == "__main__":
-    send_start_message()
-    run_once()
-    time.sleep(60)
-    shutdown()
+    evaluate_fvg_strategy()
+    run_with_monitoring()
+
+
+
+def evaluate_fvg_strategy_with_result():
+    df = get_dax_etf_xdax()
+    if df is None or df.empty:
+        print("Keine Daten geladen.")
+        return None
+
+    df = df.between_time("08:00", "17:00")
+    fvg_list = detect_fvg(df)
+
+    if not fvg_list:
+        print("Keine FVG erkannt.")
+        return None
+
+    # Neuestes FVG nehmen
+    i, fvg_type, fvg_low, fvg_high = fvg_list[-1]
+    if i + 1 >= len(df):
+        return None
+
+    entry_candle = df.iloc[i + 1]
+    entry = entry_candle["Close"]
+    sl = fvg_low if fvg_type == "bullish" else fvg_high
+    tp = entry + 2 * abs(entry - sl) if fvg_type == "bullish" else entry - 2 * abs(entry - sl)
+    zeit = entry_candle.name.to_pydatetime()
+
+    return {
+        "entry": float(entry),
+        "sl": float(sl),
+        "tp": float(tp),
+        "typ": fvg_type,
+        "zeit": zeit
+    }

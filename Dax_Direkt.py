@@ -1,5 +1,5 @@
 import time
-from strategy_fvg_xdax_l_full import evaluate_fvg_strategy, run_with_monitoring
+from strategy_fvg_xdax_l_full_extended import evaluate_fvg_strategy, run_with_monitoring
 
 def main():
     print("Starte DAX-FVG-Bot ohne GUI...")
