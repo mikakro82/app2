@@ -35,4 +35,4 @@ jobs:
         run: pip install requests
 
       - name: Telegram-Signal senden
-        run: python Dax_Direkt.py
+        run: python Dax.py
