@@ -76,5 +76,5 @@ if __name__ == "__main__":
     else:
         print("❌ Kein gültiger DataFrame – Abbruch.")
 
-    time.sleep(120)  # ⏱
+    time.sleep(70)  # ⏱
     shutdown()
