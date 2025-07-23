@@ -114,3 +114,7 @@ jobs:
 
       - name: 🚀 Bot ausführen
         run: python -u Dax.py
+
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
