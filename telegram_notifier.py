@@ -12,24 +12,23 @@ except ImportError:
 
 # Umgebungsvariablen (GitHub Secrets oder .env)
 BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+CHAT_ID  = os.getenv("TELEGRAM_CHAT_ID")
 
 LOG_FILE = "signal_log.json"
 
 
 def send_telegram_message(message: str):
-    """Sendet eine Nachricht an Telegram."""
+    """Sendet eine Telegram-Nachricht."""
     if not BOT_TOKEN or not CHAT_ID:
         print("❌ TELEGRAM_TOKEN oder TELEGRAM_CHAT_ID fehlt.")
         return
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     data = {
-        "chat_id": CHAT_ID,
-        "text": message,
+        "chat_id":    CHAT_ID,
+        "text":       message,
         "parse_mode": "Markdown",
     }
-
     try:
         requests.post(url, data=data, timeout=10)
     except Exception as e:
@@ -37,13 +36,20 @@ def send_telegram_message(message: str):
 
 
 def send_telegram_signal(entry, sl, tp, direction, time):
-    """Formatiert ein Signal und sendet es an Telegram."""
+    """
+    Formatiert ein FVG-Signal und sendet es an Telegram.
+    Signale mit entry == 0 werden still übersprungen.
+    """
+    # Wenn kein valider Entry, nichts tun
+    if entry == 0:
+        return
+
     try:
-        risk = abs(entry - sl)
-        reward = abs(tp - entry)
+        risk     = abs(entry - sl)
+        reward   = abs(tp    - entry)
         rr_ratio = round(reward / risk, 2)
-        sl_pct = round((risk / entry) * 100, 2)
-        tp_pct = round((reward / entry) * 100, 2)
+        sl_pct   = round((risk   / entry) * 100, 2)
+        tp_pct   = round((reward / entry) * 100, 2)
     except ZeroDivisionError:
         rr_ratio = sl_pct = tp_pct = 0
 
@@ -61,13 +67,13 @@ def send_telegram_signal(entry, sl, tp, direction, time):
 
 
 def save_signal_log(time, entry, sl, tp):
-    """Speichert ein Signal lokal im JSON-Log."""
+    """Speichert ein Signal im lokalen JSON-Log."""
     result = {
-        "time": time.isoformat() if hasattr(time, "isoformat") else str(time),
-        "entry": entry,
-        "sl": sl,
-        "tp": tp,
-        "status": "pending",
+        "time":         time.isoformat() if hasattr(time, "isoformat") else str(time),
+        "entry":        entry,
+        "sl":           sl,
+        "tp":           tp,
+        "status":       "pending",
         "triggered_at": None,
     }
 
@@ -85,11 +91,11 @@ def save_signal_log(time, entry, sl, tp):
 
 
 def update_signal_result(price_now):
-    """Prüft, ob TP oder SL erreicht wurde, und sendet Telegram-Update."""
+    """Prüft offene Signale auf TP/SL und sendet bei Erreichen ein Update."""
     if not os.path.exists(LOG_FILE):
         return
 
-    # Dateien lesen
+    # Log einlesen
     with open(LOG_FILE, "r", encoding="utf-8") as f:
         try:
             data = json.load(f)
@@ -100,28 +106,27 @@ def update_signal_result(price_now):
     for signal in data:
         if signal["status"] == "pending":
             if price_now >= signal["tp"]:
-                signal["status"] = "take_profit"
+                signal["status"]      = "take_profit"
                 signal["triggered_at"] = datetime.now().isoformat()
                 send_telegram_message(
                     f"✅ *Take Profit erreicht!*\nEntry: `{signal['entry']}` → TP: `{signal['tp']}`"
                 )
                 changed = True
             elif price_now <= signal["sl"]:
-                signal["status"] = "stop_loss"
+                signal["status"]      = "stop_loss"
                 signal["triggered_at"] = datetime.now().isoformat()
                 send_telegram_message(
                     f"🛑 *Stop Loss erreicht!*\nEntry: `{signal['entry']}` → SL: `{signal['sl']}`"
                 )
                 changed = True
 
-    # Änderungen persistieren
     if changed:
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
 
 def send_daily_summary():
-    """Sendet eine tägliche Telegram-Zusammenfassung."""
+    """Sendet eine tägliche Übersicht der TP/SL-Statistik."""
     if not os.path.exists(LOG_FILE):
         send_telegram_message("📊 Keine Signale für Tagesauswertung gefunden.")
         return
@@ -133,22 +138,24 @@ def send_daily_summary():
             data = []
 
     now = datetime.now()
-    stats = {"day": {"tp": 0, "sl": 0},
-             "week": {"tp": 0, "sl": 0},
-             "month": {"tp": 0, "sl": 0},
-             "year": {"tp": 0, "sl": 0}}
+    stats = {
+        "day":   {"tp": 0, "sl": 0},
+        "week":  {"tp": 0, "sl": 0},
+        "month": {"tp": 0, "sl": 0},
+        "year":  {"tp": 0, "sl": 0},
+    }
 
     for s in data:
         if s["status"] in ["take_profit", "stop_loss"]:
             t = datetime.fromisoformat(s["triggered_at"])
             for k, delta in [
-                ("day", timedelta(days=1)),
-                ("week", timedelta(weeks=1)),
+                ("day",   timedelta(days=1)),
+                ("week",  timedelta(weeks=1)),
                 ("month", timedelta(days=31)),
-                ("year", timedelta(days=365)),
+                ("year",  timedelta(days=365)),
             ]:
                 if now - t <= delta:
-                    stats[k]["tp" if s["status"] == "take_profit" else "sl"] += 1
+                    stats[k]["tp" if s["status"]=="take_profit" else "sl"] += 1
 
     summary = (
         f"📈 *Tagesauswertung {now.strftime('%d.%m.%Y')}*\n"
@@ -157,5 +164,4 @@ def send_daily_summary():
         f"📆 Monat: ✅ {stats['month']['tp']} TP | 🛑 {stats['month']['sl']} SL\n"
         f"📊 Jahr: ✅ {stats['year']['tp']} TP | 🛑 {stats['year']['sl']} SL"
     )
-
     send_telegram_message(summary)
