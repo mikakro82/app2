@@ -31,4 +31,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: 🚀 Bot ausführen
-        run: python Dax.py
+        run: python -u Dax.py
