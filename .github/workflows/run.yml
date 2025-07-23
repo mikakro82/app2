@@ -2,30 +2,32 @@ name: Alle 10 Minuten Mo–Fr (07–21 Uhr DE)
 
 on:
   schedule:
+    # Alle 10 Minuten von 06:00–19:59 UTC = 07:00–20:59 DE
     - cron: '*/10 6-19 * * 1-5'
   workflow_dispatch:
 
 jobs:
   run-dax-bot:
     runs-on: ubuntu-latest
+
     steps:
       - name: 📥 Repository auschecken
         uses: actions/checkout@v3
 
-      - name: 🐍 Python installieren
+      - name: 🐍 Python 3.10 installieren
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: 📦 Abhängigkeiten installieren
-        - name: Cache pip
-  uses: actions/cache@v3
-  with:
-    path: ~/.cache/pip
-    key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    restore-keys: |
-      ${{ runner.os }}-pip-
+      - name: 💾 Cache pip-Abhängigkeiten
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
+      - name: 📦 Abhängigkeiten installieren
         run: pip install -r requirements.txt
 
       - name: 🚀 Bot ausführen
