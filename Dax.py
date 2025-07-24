@@ -47,11 +47,19 @@ def headless_run():
         return
 
     if result:
-        entry, sl, tp, typ, zeit = result['entry'], result['sl'], result['tp'], result['typ'], result['zeit']
+        # Werte als float casten
+        entry = float(result['entry'])
+        sl = float(result['sl'])
+        tp = float(result['tp'])
+        typ = result['typ']
+        zeit = result['zeit']
+
         real = get_real_dax()
         if real is not None:
             factor = real / entry
-            ge, gs, gt = entry * factor, sl * factor, tp * factor
+            ge = entry * factor
+            gs = sl * factor
+            gt = tp * factor
             print(f"[{now}] 📈 XDAXI: {entry:.2f} | GDAXI: {ge:.2f}")
             try:
                 send_telegram_signal(ge, gs, gt, typ, zeit)
@@ -59,7 +67,7 @@ def headless_run():
             except Exception as e:
                 print(f"[{now}] ❌ Sendefehler: {e}")
         else:
-            print(f"[{now}] ⚠️ Kein GDAXI verfügbar - sende XDAXI-Signal.")
+            print(f"[{now}] ⚠️ Kein GDAXI verfügbar - sende XDAXI-Signal: Entry={entry:.2f}, SL={sl:.2f}, TP={tp:.2f}")
             send_telegram_signal(entry, sl, tp, typ, zeit)
     else:
         print(f"[{now}] ℹ️ Kein neues Signal.")
@@ -71,7 +79,7 @@ def headless_run():
     except Exception as e:
         print(f"[{now}] ❌ Monitoring-Fehler: {e}")
 
-# ==================== GUI-Modus ====================
+# ==================== GUI-Modus ====================================
 if GUI_AVAILABLE:
     class DAXFVGApp:
         def __init__(self, root):
@@ -96,7 +104,7 @@ if GUI_AVAILABLE:
                 schedule_exit(self.root)
                 threading.Thread(target=self.task, daemon=True).start()
 
-        def task(self):
+            def task(self):
             self.log("🔍 Suche nach FVG-Signal...")
             try:
                 result = evaluate_fvg_strategy_with_result()
@@ -104,16 +112,22 @@ if GUI_AVAILABLE:
                 self.log(f"❌ Fehler Strategie: {e}")
                 return
             if result:
-                entry, sl, tp, typ, zeit = result['entry'], result['sl'], result['tp'], result['typ'], result['zeit']
+                entry = float(result['entry'])
+                sl = float(result['sl'])
+                tp = float(result['tp'])
+                typ = result['typ']
+                zeit = result['zeit']
                 real = get_real_dax()
                 if real is not None:
                     factor = real / entry
-                    ge, gs, gt = entry * factor, sl * factor, tp * factor
+                    ge = entry * factor
+                    gs = sl * factor
+                    gt = tp * factor
                     self.log(f"GDAXI: {real:.2f}, Signal GDAXI: {ge:.2f}")
                     send_telegram_signal(ge, gs, gt, typ, zeit)
                     self.log("📤 Telegram (GDAXI) gesendet.")
                 else:
-                    self.log("⚠️ Kein GDAXI - sende XDAXI")
+                    self.log(f"⚠️ Kein GDAXI - sende XDAXI: Entry={entry:.2f}, SL={sl:.2f}, TP={tp:.2f}")
                     send_telegram_signal(entry, sl, tp, typ, zeit)
             else:
                 self.log("ℹ️ Kein Signal.")
@@ -124,7 +138,7 @@ if GUI_AVAILABLE:
             except Exception as e:
                 self.log(f"❌ Monitoring-Fehler: {e}")
 
-    def run_gui():
+    def run_gui")]}():
         root = tk.Tk()
         app = DAXFVGApp(root)
         root.mainloop()
