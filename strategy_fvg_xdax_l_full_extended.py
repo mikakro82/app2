@@ -1,7 +1,8 @@
 import yfinance as yf
 import pandas as pd
 from datetime import datetime
-from telegram_notifier import send_telegram_signal, update_signal_result, send_daily_summary
+from telegram_notifier import send_telegram_signal, evaluate_pending_signals, send_daily_summary
+
 
 # 📦 Globale Variable für einmalig geladene Daten
 global_df = None
