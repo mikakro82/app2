@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 import yfinance as yf
 from strategy_fvg_xdax_l_full_extended import evaluate_fvg_strategy_with_result, run_with_monitoring
-from telegram_notifier import send_telegram_signal, evaluate_pending_signals 
+from telegram_notifier import send_telegram_signal, evaluate_pending_signals
 import os
 
 def get_real_dax():
@@ -77,6 +77,7 @@ class DAXFVGApp:
                         tp = result["tp"] * factor
                         quelle = "gdaxi"
                         self.log(f"📤 Telegram (GDAXI): Entry={entry:.2f}, SL={sl:.2f}, TP={tp:.2f}")
+                        evaluate_pending_signals(real_dax)
                     else:
                         entry = result["entry"]
                         sl = result["sl"]
