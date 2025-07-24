@@ -64,6 +64,9 @@ def send_telegram_signal(entry, sl, tp, direction, time):
 
     save_signal_log(time, entry, sl, tp)
     send_telegram_message(message)
+entry = round(float(entry), 2)
+sl    = round(float(sl), 2)
+tp    = round(float(tp), 2)
 
 
 def save_signal_log(time, entry, sl, tp):
