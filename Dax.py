@@ -100,7 +100,7 @@ class DAXFVGApp:
 
             except Exception as e:
                 self.log(f"❌ Fehler: {e}")
-            time.sleep(30)
+            time.sleep(130)
 
 def run_gui():
     root = tk.Tk()
