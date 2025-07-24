@@ -1,4 +1,3 @@
-
 try:
     import tkinter as tk
 except ImportError:
@@ -11,6 +10,7 @@ from datetime import datetime
 import yfinance as yf
 from strategy_fvg_xdax_l_full_extended import evaluate_fvg_strategy_with_result, run_with_monitoring
 from telegram_notifier import send_telegram_signal, evaluate_pending_signals
+import os    
 
 def get_real_dax():
     try:
@@ -18,7 +18,7 @@ def get_real_dax():
         if df.empty:
             return None
         return df["Close"].iloc[-1].item()
-    except Exception as e:
+    except Exception:
         return None
 
 class DAXFVGApp:
@@ -37,7 +37,7 @@ class DAXFVGApp:
         self.stop_button.pack(pady=5)
 
         self.running = False
-        self.last_sent_time = None  # letzter gesendeter Setup-Zeitpunkt
+        self.last_sent_time = None
 
     def log(self, text):
         now = datetime.now().strftime('%H:%M:%S')
@@ -100,15 +100,34 @@ class DAXFVGApp:
 
             except Exception as e:
                 self.log(f"❌ Fehler: {e}")
-            time.sleep(300)
+            time.sleep(130)
 
 def run_gui():
     root = tk.Tk()
     app = DAXFVGApp(root)
     root.mainloop()
 
-if __name__ == "__main__":
-    run_gui()
+import os
 
- time.sleep(30)  # ⏱
-    shutdown()
+def shutdown_app():
+    print("🛑 Automatischer Shutdown nach 60 Sekunden aktiviert.")
+    os._exit(0)
+
+if __name__ == "__main__":
+    # Start je nach Umgebung
+    if os.environ.get("DISPLAY", "") == "":
+        print("⚠️ Kein DISPLAY gefunden – GUI wird übersprungen.")
+        from strategy_fvg_xdax_l_full_extended import get_dax_etf_xdax_once, evaluate_fvg_strategy
+        df = get_dax_etf_xdax_once()
+        evaluate_fvg_strategy(df)
+        run_with_monitoring(df)
+        time.sleep(60)
+        shutdown_app()
+    else:
+        # Starte GUI mit Timer im Hintergrund
+        def start_gui_with_timeout():
+            time.sleep(60)
+            shutdown_app()
+
+        threading.Thread(target=start_gui_with_timeout, daemon=True).start()
+        run_gui()
