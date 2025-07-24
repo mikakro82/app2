@@ -10,7 +10,7 @@ from datetime import datetime
 import yfinance as yf
 from strategy_fvg_xdax_l_full_extended import evaluate_fvg_strategy_with_result, run_with_monitoring
 from telegram_notifier import send_telegram_signal, evaluate_pending_signals
-import os    
+import os
 
 def get_real_dax():
     try:
@@ -87,10 +87,24 @@ class DAXFVGApp:
                         self.log(f"📤 Telegram-Signal (GDAXI umgerechnet): Entry={gdaxi_entry:.2f}, SL={gdaxi_sl:.2f}, TP={gdaxi_tp:.2f}")
                         self.log(f"📊 Knockout-Risiko: 🔻 SL: {sl_zertifikat:.2f}% | 🔺 TP: {tp_zertifikat:.2f}% (bei Hebel 15)")
 
-                        send_telegram_signal(gdaxi_entry, gdaxi_sl, gdaxi_tp, result["typ"], result["zeit"])
+                        send_telegram_signal(
+                            entry=gdaxi_entry,
+                            sl=gdaxi_sl,
+                            tp=gdaxi_tp,
+                            direction=result["typ"],
+                            time=result["zeit"],
+                            quelle="gdaxi"
+                        )
                     else:
                         self.log("⚠️ Kein GDAXI verfügbar – sende XDAX-Signal.")
-                        send_telegram_signal(result["entry"], result["sl"], result["tp"], result["typ"], result["zeit"])
+                        send_telegram_signal(
+                            entry=result["entry"],
+                            sl=result["sl"],
+                            tp=result["tp"],
+                            direction=result["typ"],
+                            time=result["zeit"],
+                            quelle="xdax"
+                        )
                 else:
                     self.log("ℹ️ Kein neues Setup erkannt – kein Signal gesendet.")
 
@@ -107,14 +121,11 @@ def run_gui():
     app = DAXFVGApp(root)
     root.mainloop()
 
-import os
-
 def shutdown_app():
     print("🛑 Automatischer Shutdown nach 60 Sekunden aktiviert.")
     os._exit(0)
 
 if __name__ == "__main__":
-    # Start je nach Umgebung
     if os.environ.get("DISPLAY", "") == "":
         print("⚠️ Kein DISPLAY gefunden – GUI wird übersprungen.")
         from strategy_fvg_xdax_l_full_extended import get_dax_etf_xdax as get_dax_etf_xdax_once, evaluate_fvg_strategy
@@ -124,7 +135,6 @@ if __name__ == "__main__":
         time.sleep(60)
         shutdown_app()
     else:
-        # Starte GUI mit Timer im Hintergrund
         def start_gui_with_timeout():
             time.sleep(60)
             shutdown_app()
