@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import json
 import os
 
@@ -10,11 +10,9 @@ LOG_FILE = "signal_log.json"
 
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    # Entfernt ungültige Unicode-Zeichen wie kaputte Emojis
-    clean_message = message.encode('utf-8', errors='ignore').decode('utf-8')
     data = {
         "chat_id": CHAT_ID,
-        "text": clean_message,
+        "text": message,
         "parse_mode": "Markdown"
     }
     try:
@@ -68,7 +66,7 @@ def send_telegram_signal(entry, sl, tp, direction, time, quelle="xdax"):
     message = (
         f"📊 *FVG {direction.upper()} Signal*\n"
         f"📍 *Quelle*: {quelle.upper()}\n"
-        f"🕒 Zeit: {time}\n"
+        f"🕒 Zeit: {time.strftime('%Y-%m-%d %H:%M')}\n"
         f"🎯 Entry: `{entry:.2f}`\n"
         f"🛡️ SL: `{sl:.2f}` ({sl_pct}%)\n"
         f"🏁 TP: `{tp:.2f}` ({tp_pct}%)\n"
@@ -88,25 +86,20 @@ def evaluate_pending_signals(price_now):
             data = []
 
     changed = False
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
     for signal in data:
         if signal["status"] != "pending":
             continue
-
-        try:
-            signal_time = datetime.fromisoformat(signal["time"])
-            # sicherstellen, dass beide datetime-Objekte Zeitzonen enthalten
-            if signal_time.tzinfo is None:
-                signal_time = signal_time.replace(tzinfo=timezone.utc)
-        except Exception:
-            continue
-
-        if signal_time > now - timedelta(minutes=1):
-            continue  # noch zu frisch – nicht bewerten
-
         entry = signal["entry"]
         sl = signal["sl"]
         tp = signal["tp"]
+        try:
+            signal_time = datetime.fromisoformat(signal["time"])
+        except:
+            continue
+        if now - signal_time < timedelta(minutes=1):
+            continue  # zu frisch
+
         if price_now >= tp:
             signal["status"] = "take_profit"
             signal["triggered_at"] = now.isoformat()
@@ -121,43 +114,3 @@ def evaluate_pending_signals(price_now):
     if changed:
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-
-def send_daily_summary():
-    if not os.path.exists(LOG_FILE):
-        send_telegram_message("📊 Keine Signal-Daten für die Tagesauswertung verfügbar.")
-        return
-
-    with open(LOG_FILE, "r", encoding="utf-8") as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError:
-            data = []
-
-    now = datetime.now()
-    stats = {
-        "day": {"tp": 0, "sl": 0},
-        "week": {"tp": 0, "sl": 0},
-        "month": {"tp": 0, "sl": 0},
-        "year": {"tp": 0, "sl": 0},
-    }
-
-    for s in data:
-        if s["status"] in ["take_profit", "stop_loss"] and s["triggered_at"]:
-            t = datetime.fromisoformat(s["triggered_at"])
-            for k, delta in [
-                ("day", timedelta(days=1)),
-                ("week", timedelta(weeks=1)),
-                ("month", timedelta(days=31)),
-                ("year", timedelta(days=365)),
-            ]:
-                if now - t <= delta:
-                    stats[k]["tp" if s["status"] == "take_profit" else "sl"] += 1
-
-    summary = (
-        f"📈 *Tagesauswertung {now.strftime('%d.%m.%Y')}*\n"
-        f"📅 Heute: ✅ {stats['day']['tp']} TP | 🛑 {stats['day']['sl']} SL\n"
-        f"🗓️ Woche: ✅ {stats['week']['tp']} TP | 🛑 {stats['week']['sl']} SL\n"
-        f"📆 Monat: ✅ {stats['month']['tp']} TP | 🛑 {stats['month']['sl']} SL\n"
-        f"📊 Jahr: ✅ {stats['year']['tp']} TP | 🛑 {stats['year']['sl']} SL"
-    )
-    send_telegram_message(summary)
