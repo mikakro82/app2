@@ -59,7 +59,8 @@ def run_with_monitoring(df):
         return
 
     last_price = df['Close'].iloc[-1]
-    update_signal_result(last_price)
+   evaluate_pending_signals(last_price)
+
 
     now = datetime.now()
     if now.strftime("%H:%M") == "17:00":
