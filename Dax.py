@@ -1,6 +1,3 @@
-day.py – Läuft als Headless-Service oder GUI. Automatische Umrechnung von XDAXI auf GDAXI für Telegram-Signale.
-Beendet sich selbst nach 50 Sekunden Laufzeit.
-"""
 import os
 import sys
 import time
@@ -11,12 +8,12 @@ from datetime import datetime
 try:
     import tkinter as tk
     if os.name != 'nt' and not os.environ.get('DISPLAY'):
-        print("✨ Keine Anzeige gefunden – wechsle in den Headless-Modus.")
+        print("✨ Keine Anzeige gefunden - wechsle in den Headless-Modus.")
         GUI_AVAILABLE = False
     else:
         GUI_AVAILABLE = True
 except ImportError:
-    print("⚠️ tkinter nicht verfügbar – Headless-Modus aktiviert.")
+    print("⚠️ tkinter nicht verfügbar - Headless-Modus aktiviert.")
     GUI_AVAILABLE = False
 
 import yfinance as yf
@@ -62,7 +59,7 @@ def headless_run():
             except Exception as e:
                 print(f"[{now}] ❌ Sendefehler: {e}")
         else:
-            print(f"[{now}] ⚠️ Kein GDAXI verfügbar – sende XDAXI-Signal.")
+            print(f"[{now}] ⚠️ Kein GDAXI verfügbar - sende XDAXI-Signal.")
             send_telegram_signal(entry, sl, tp, typ, zeit)
     else:
         print(f"[{now}] ℹ️ Kein neues Signal.")
@@ -79,7 +76,7 @@ if GUI_AVAILABLE:
     class DAXFVGApp:
         def __init__(self, root):
             self.root = root
-            self.root.title("📈 DAX FVG Bot – Live & Monitoring")
+            self.root.title("📈 DAX FVG Bot - Live & Monitoring")
             self.root.geometry("800x600")
             self.output = tk.Text(root, wrap=tk.WORD, height=30)
             self.output.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
@@ -111,12 +108,12 @@ if GUI_AVAILABLE:
                 real = get_real_dax()
                 if real:
                     factor = real / entry
-                    ge, gs, gt = entry*factor, sl*factor, tp*factor
+                    ge, gs, gt = entry * factor, sl * factor, tp * factor
                     self.log(f"GDAXI: {real:.2f}, Signal GDAXI: {ge:.2f}")
                     send_telegram_signal(ge, gs, gt, typ, zeit)
                     self.log("📤 Telegram (GDAXI) gesendet.")
                 else:
-                    self.log("⚠️ Kein GDAXI – sende XDAXI")
+                    self.log("⚠️ Kein GDAXI - sende XDAXI")
                     send_telegram_signal(entry, sl, tp, typ, zeit)
             else:
                 self.log("ℹ️ Kein Signal.")
