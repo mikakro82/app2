@@ -56,7 +56,7 @@ class DAXFVGApp:
         self.running = False
         self.stop_button.config(state=tk.DISABLED)
         self.start_button.config(state=tk.NORMAL)
-        self.log("🛑 Überwachung gestoppt.")
+        self.log("🚩 Überwachung gestoppt.")
 
     def monitor_loop(self):
         while self.running:
@@ -85,7 +85,7 @@ class DAXFVGApp:
 
                         self.log(f"📊 Realtime DAX-Kurs (GDAXI): {real_dax:.2f}")
                         self.log(f"📤 Telegram-Signal (GDAXI umgerechnet): Entry={gdaxi_entry:.2f}, SL={gdaxi_sl:.2f}, TP={gdaxi_tp:.2f}")
-                        self.log(f"📊 Knockout-Risiko: 🔻 SL: {sl_zertifikat:.2f}% | 🔺 TP: {tp_zertifikat:.2f}% (bei Hebel 15)")
+                        self.log(f"📊 Knockout-Risiko: 🔻 SL: {sl_zertifikat:.2f}% | 🔹 TP: {tp_zertifikat:.2f}% (bei Hebel 15)")
 
                         send_telegram_signal(
                             entry=gdaxi_entry,
@@ -108,7 +108,7 @@ class DAXFVGApp:
                 else:
                     self.log("ℹ️ Kein neues Setup erkannt – kein Signal gesendet.")
 
-                self.log("📡 Überprüfe aktive Trades...")
+                self.log("📱 Überprüfe aktive Trades...")
                 run_with_monitoring()
                 self.log("🧠 Überwachung abgeschlossen.")
 
@@ -122,7 +122,7 @@ def run_gui():
     root.mainloop()
 
 def shutdown_app():
-    print("🛑 Automatischer Shutdown nach 60 Sekunden aktiviert.")
+    print("🚩 Automatischer Shutdown nach 60 Sekunden aktiviert.")
     os._exit(0)
 
 if __name__ == "__main__":
