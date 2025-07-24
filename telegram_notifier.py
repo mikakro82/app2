@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 import json
 import os
 
-BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")  # oder hartkodiert in Tests
-CHAT_ID  = os.getenv("TELEGRAM_CHAT_ID")
+BOT_TOKEN = "8170146997:AAE5P3SIi_L06iYkke35s7A1EP77KftkWVI"
+CHAT_ID   = "1596720374"
 
 LOG_FILE = "signal_log.json"
 
@@ -21,11 +21,11 @@ def send_telegram_message(message):
         print("Telegram Error:", e)
 
 def send_telegram_signal(entry, sl, tp, direction, time):
-    risk      = abs(entry - sl)
-    reward    = abs(tp - entry)
-    rr_ratio  = round(reward / risk, 2)
-    sl_pct    = round((risk / entry) * 100, 2)
-    tp_pct    = round((reward / entry) * 100, 2)
+    risk     = abs(entry - sl)
+    reward   = abs(tp - entry)
+    rr_ratio = round(reward / risk, 2)
+    sl_pct   = round((risk / entry) * 100, 2)
+    tp_pct   = round((reward / entry) * 100, 2)
 
     message = (
         f"📊 *FVG {direction.upper()} Signal*\n"
@@ -111,4 +111,14 @@ def send_daily_summary():
                 ("month", timedelta(days=31)),
                 ("year",  timedelta(days=365)),
             ]:
-                if now - t
+                if now - t <= delta:
+                    stats[k]["tp" if s["status"]=="take_profit" else "sl"] += 1
+
+    message = (
+        f"📈 *Tagesauswertung {now.strftime('%d.%m.%Y')}*\n"
+        f"📅 Heute: ✅ {stats['day']['tp']} TP | 🛑 {stats['day']['sl']} SL\n"
+        f"🗓️ Woche: ✅ {stats['week']['tp']} TP | 🛑 {stats['week']['sl']} SL\n"
+        f"📆 Monat: ✅ {stats['month']['tp']} TP | 🛑 {stats['month']['sl']} SL\n"
+        f"📊 Jahr: ✅ {stats['year']['tp']} TP | 🛑 {stats['year']['sl']} SL"
+    )
+    send_telegram_message(message)
