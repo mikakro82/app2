@@ -3,8 +3,16 @@ from datetime import datetime, timedelta
 import json
 import os
 
-BOT_TOKEN = "8170146997:AAE5P3SIi_L06iYkke35s7A1EP77KftkWVI"
-CHAT_ID = "1596720374"
+# Optional: .env laden für lokale Tests
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+# Umgebungsvariablen (GitHub Secrets oder .env)
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID  = os.getenv("TELEGRAM_CHAT_ID")
 
 LOG_FILE = "signal_log.json"
 
@@ -86,7 +94,6 @@ def evaluate_pending_signals(price_now):
             data = []
 
     changed = False
-    now = datetime.now(signal_time.tzinfo)  # gleiche Zeitzone wie das Signal
     for signal in data:
         if signal["status"] != "pending":
             continue
@@ -95,6 +102,7 @@ def evaluate_pending_signals(price_now):
         tp = signal["tp"]
         try:
             signal_time = datetime.fromisoformat(signal["time"])
+            now = datetime.now(signal_time.tzinfo)  # gleiche Zeitzone wie das Signal
         except:
             continue
         if now - signal_time < timedelta(minutes=1):
