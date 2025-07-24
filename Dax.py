@@ -119,7 +119,7 @@ if __name__ == "__main__":
         print("⚠️ Kein DISPLAY gefunden – GUI wird übersprungen.")
         from strategy_fvg_xdax_l_full_extended import get_dax_etf_xdax as get_dax_etf_xdax_once, evaluate_fvg_strategy
         df = get_dax_etf_xdax_once()
-        evaluate_fvg_strategy(df)
+        evaluate_fvg_strategy()
         run_with_monitoring(df)
         time.sleep(60)
         shutdown_app()
