@@ -6,7 +6,7 @@ Beendet sich selbst nach 50 Sekunden Laufzeit.
 """
 import os
 import sys
-time
+import time
 import threading
 from datetime import datetime
 
