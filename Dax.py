@@ -49,7 +49,7 @@ def headless_run():
     if result:
         entry, sl, tp, typ, zeit = result['entry'], result['sl'], result['tp'], result['typ'], result['zeit']
         real = get_real_dax()
-        if real:
+        if real is not None:
             factor = real / entry
             ge, gs, gt = entry * factor, sl * factor, tp * factor
             print(f"[{now}] 📈 XDAXI: {entry:.2f} | GDAXI: {ge:.2f}")
@@ -106,7 +106,7 @@ if GUI_AVAILABLE:
             if result:
                 entry, sl, tp, typ, zeit = result['entry'], result['sl'], result['tp'], result['typ'], result['zeit']
                 real = get_real_dax()
-                if real:
+                if real is not None:
                     factor = real / entry
                     ge, gs, gt = entry * factor, sl * factor, tp * factor
                     self.log(f"GDAXI: {real:.2f}, Signal GDAXI: {ge:.2f}")
