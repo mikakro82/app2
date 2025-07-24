@@ -18,7 +18,7 @@ def send_telegram_signal(entry, sl, tp, direction, time):
     tp_pct   = round((reward / entry) * 100, 2)
 
     message = (
-        f"📊 *FVG {direction.upper()} Setup*\n"
+        f"📊 *FVG {direction.upper()} Setup neu*\n"
         f"🕒 Zeit: {time.strftime('%Y-%m-%d %H:%M')}\n"
         f"🎯 Entry: `{math.ceil(entry)}`\n"
         f"🛡️ SL: `{math.ceil(sl)}` ({sl_pct}%)\n"
