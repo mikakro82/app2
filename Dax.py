@@ -70,41 +70,22 @@ class DAXFVGApp:
                     self.log(f"   SL: {result['sl']:.2f} | TP: {result['tp']:.2f} | Zeit: {result['zeit'].strftime('%H:%M')}")
 
                     real_dax = get_real_dax()
-                    if real_dax is not None:
-                        evaluate_pending_signals(real_dax)
-                        factor = float(real_dax) / float(result["entry"])
-                        gdaxi_entry = float(result["entry"]) * factor
-                        gdaxi_sl = float(result["sl"]) * factor
-                        gdaxi_tp = float(result["tp"]) * factor
-
-                        sl_percent = abs(gdaxi_entry - gdaxi_sl) / gdaxi_entry * 100
-                        tp_percent = abs(gdaxi_tp - gdaxi_entry) / gdaxi_entry * 100
-                        hebel = 15
-                        sl_zertifikat = sl_percent * hebel
-                        tp_zertifikat = tp_percent * hebel
-
-                        self.log(f"📊 Realtime DAX-Kurs (GDAXI): {real_dax:.2f}")
-                        self.log(f"📤 Telegram-Signal (GDAXI umgerechnet): Entry={gdaxi_entry:.2f}, SL={gdaxi_sl:.2f}, TP={gdaxi_tp:.2f}")
-                        self.log(f"📊 Knockout-Risiko: 🔻 SL: {sl_zertifikat:.2f}% | 🔹 TP: {tp_zertifikat:.2f}% (bei Hebel 15)")
-
-                        send_telegram_signal(
-                            entry=gdaxi_entry,
-                            sl=gdaxi_sl,
-                            tp=gdaxi_tp,
-                            direction=result["typ"],
-                            time=result["zeit"],
-                            quelle="gdaxi"
-                        )
+                    if real_dax:
+                        factor = real_dax / result["entry"]
+                        entry = result["entry"] * factor
+                        sl = result["sl"] * factor
+                        tp = result["tp"] * factor
+                        quelle = "gdaxi"
+                        self.log(f"📤 Telegram (GDAXI): Entry={entry:.2f}, SL={sl:.2f}, TP={tp:.2f}")
                     else:
+                        entry = result["entry"]
+                        sl = result["sl"]
+                        tp = result["tp"]
+                        quelle = "xdax"
                         self.log("⚠️ Kein GDAXI verfügbar – sende XDAX-Signal.")
-                        send_telegram_signal(
-                            entry=result["entry"],
-                            sl=result["sl"],
-                            tp=result["tp"],
-                            direction=result["typ"],
-                            time=result["zeit"],
-                            quelle="xdax"
-                        )
+
+                    send_telegram_signal(entry, sl, tp, result["typ"], result["zeit"], quelle=quelle)
+
                 else:
                     self.log("ℹ️ Kein neues Setup erkannt – kein Signal gesendet.")
 
