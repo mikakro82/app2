@@ -2,7 +2,7 @@
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-from telegram_notifier import send_telegram_signal, evaluate_pending_signals, update_signal_result, send_daily_summary
+from telegram_notifier import send_telegram_signal, evaluate_pending_signals, send_daily_summary
 
 def get_dax_etf_xdax(interval='60m'):
     try:
