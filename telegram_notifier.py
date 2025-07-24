@@ -16,6 +16,8 @@ CHAT_ID  = os.getenv("TELEGRAM_CHAT_ID")
 
 LOG_FILE = "signal_log.json"
 
+LOG_FILE = "signal_log.json"
+
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     data = {
