@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+day.py - Läuft als Headless-Service oder GUI. Automatische Umrechnung von XDAXI auf GDAXI für Telegram-Signale.
+Beendet sich selbst nach 50 Sekunden Laufzeit.
+"""
 import os
 import sys
 import time
@@ -47,7 +52,6 @@ def headless_run():
         return
 
     if result:
-        # Werte als float casten
         entry = float(result['entry'])
         sl = float(result['sl'])
         tp = float(result['tp'])
@@ -79,7 +83,7 @@ def headless_run():
     except Exception as e:
         print(f"[{now}] ❌ Monitoring-Fehler: {e}")
 
-# ==================== GUI-Modus ====================================
+# ==================== GUI-Modus ====================
 if GUI_AVAILABLE:
     class DAXFVGApp:
         def __init__(self, root):
@@ -88,8 +92,8 @@ if GUI_AVAILABLE:
             self.root.geometry("800x600")
             self.output = tk.Text(root, wrap=tk.WORD, height=30)
             self.output.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-            self.start = tk.Button(root, text="🟢 Einmal-Run", command=self.run_once)
-            self.start.pack(pady=5)
+            self.start_button = tk.Button(root, text="🟢 Einmal-Run", command=self.run_once)
+            self.start_button.pack(pady=5)
             self.running = False
 
         def log(self, msg):
@@ -100,17 +104,18 @@ if GUI_AVAILABLE:
         def run_once(self):
             if not self.running:
                 self.running = True
-                self.start.config(state=tk.DISABLED)
+                self.start_button.config(state=tk.DISABLED)
                 schedule_exit(self.root)
                 threading.Thread(target=self.task, daemon=True).start()
 
-            def task(self):
+        def task(self):
             self.log("🔍 Suche nach FVG-Signal...")
             try:
                 result = evaluate_fvg_strategy_with_result()
             except Exception as e:
                 self.log(f"❌ Fehler Strategie: {e}")
                 return
+
             if result:
                 entry = float(result['entry'])
                 sl = float(result['sl'])
@@ -118,6 +123,7 @@ if GUI_AVAILABLE:
                 typ = result['typ']
                 zeit = result['zeit']
                 real = get_real_dax()
+
                 if real is not None:
                     factor = real / entry
                     ge = entry * factor
@@ -131,6 +137,7 @@ if GUI_AVAILABLE:
                     send_telegram_signal(entry, sl, tp, typ, zeit)
             else:
                 self.log("ℹ️ Kein Signal.")
+
             self.log("📡 Trades prüfen...")
             try:
                 run_with_monitoring()
@@ -138,7 +145,7 @@ if GUI_AVAILABLE:
             except Exception as e:
                 self.log(f"❌ Monitoring-Fehler: {e}")
 
-    def run_gui")]}():
+    def run_gui():
         root = tk.Tk()
         app = DAXFVGApp(root)
         root.mainloop()
