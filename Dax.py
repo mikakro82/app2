@@ -1,80 +1,121 @@
-import time
+#!/usr/bin/env python3
+"""
+day.py – Läuft entweder als GUI oder als Headless-Service (z.B. auf GitHub Actions).
+Wenn tkinter nicht installiert oder keine Anzeige vorhanden ist, wechselt es automatisch in den Headless-Modus.
+"""
 import os
-import sys
-import signal
-import yfinance as yf
+import time
+import threading
 from datetime import datetime
-from strategy_fvg_xdax_l_full_extended import (
-    evaluate_fvg_strategy_with_result,
-    run_with_monitoring
-)
+
+# Prüfen, ob GUI möglich ist
+try:
+    import tkinter as tk
+    # Unter Linux muss DISPLAY gesetzt sein
+    if os.name != 'nt' and not os.environ.get('DISPLAY'):
+        print("✨ Keine Anzeige gefunden – wechsle in den Headless-Modus.")
+        GUI_AVAILABLE = False
+    else:
+        GUI_AVAILABLE = True
+except ImportError:
+    print("⚠️ tkinter nicht verfügbar – Headless-Modus aktiviert.")
+    GUI_AVAILABLE = False
+
+from strategy_fvg_xdax_l_full_extended import evaluate_fvg_strategy_with_result, run_with_monitoring
 from telegram_notifier import send_telegram_signal
 
-def get_real_dax():
-    try:
-        df = yf.download("^GDAXI", period="1d", interval="60m")
-        if df.empty:
-            return None
-        return df["Close"].iloc[-1].item()
-    except Exception:
-        return None
+# ==================== Headless-Modus ====================
+def headless_loop(interval=300):
+    last_sent_time = None
+    while True:
+        now_str = datetime.now().strftime('%H:%M:%S')
+        print(f"[{now_str}] 🔍 Suche nach neuen FVG-Signalen...")
+        result = evaluate_fvg_strategy_with_result()
 
-def get_xdax_df():
-    try:
-        ticker = yf.Ticker("XDAX.L")
-        df = ticker.history(period="1d", interval="60m")
-        if df.empty:
-            print("❌ Keine XDAX.L-Daten empfangen.")
-            return None
-        print(f"📊 {len(df)} Kerzen empfangen von XDAX.L ({datetime.now().strftime('%H:%M:%S')})")
-        return df[['Open', 'High', 'Low', 'Close']]
-    except Exception as e:
-        print("❌ Fehler beim Laden von XDAX.L:", e)
-        return None
-
-def send_start_message():
-    try:
-        send_telegram_signal(0, 0, 0, "info", "🚀 DAX-FVG-Bot gestartet – 1-Minuten-Lauf.")
-    except Exception as e:
-        print(f"⚠️ Startmeldung konnte nicht gesendet werden: {e}")
-
-def run_once(df):
-    print("🔍 Suche nach FVG...")
-    result = evaluate_fvg_strategy_with_result(df)
-
-    if result:
-        print(f"📈 Signal gefunden: {result['typ'].upper()} @ {result['entry']:.2f}")
-        real_dax = get_real_dax()
-
-        if real_dax:
-            factor = float(real_dax) / float(result["entry"])
-            entry = result["entry"] * factor
-            sl = result["sl"] * factor
-            tp = result["tp"] * factor
-            print(f"📤 Telegram (GDAXI): Entry={entry:.2f}, SL={sl:.2f}, TP={tp:.2f}")
-            send_telegram_signal(entry, sl, tp, result["typ"], result["zeit"])
+        if result and (last_sent_time is None or result['zeit'] != last_sent_time):
+            last_sent_time = result['zeit']
+            print(f"[{now_str}] 📈 Neues Signal: {result['typ'].upper()} @ {result['entry']:.2f} | SL {result['sl']:.2f} | TP {result['tp']:.2f}")
+            send_telegram_signal(result['entry'], result['sl'], result['tp'], result['typ'], result['zeit'])
         else:
-            print("⚠️ Kein Real-DAX – sende XDAX-Daten.")
-            send_telegram_signal(result["entry"], result["sl"], result["tp"], result["typ"], result["zeit"])
+            print(f"[{now_str}] ℹ️ Kein neues Signal erkannt.")
+
+        print(f"[{now_str}] 📡 Überprüfe aktive Trades...")
+        run_with_monitoring()
+        print(f"[{now_str}] ✅ Zyklus abgeschlossen. Warte {interval} Sekunden.\n")
+        time.sleep(interval)
+
+# ==================== GUI-Modus ====================
+if GUI_AVAILABLE:
+    class DAXFVGApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("📈 DAX FVG Bot – Live & Monitoring")
+            self.root.geometry("800x600")
+
+            self.output = tk.Text(root, wrap=tk.WORD, height=30)
+            self.output.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+            self.start_button = tk.Button(root, text="🟢 Live-Modus starten", command=self.start_monitoring)
+            self.start_button.pack(pady=5)
+
+            self.stop_button = tk.Button(root, text="🔴 Live-Modus stoppen", command=self.stop_monitoring, state=tk.DISABLED)
+            self.stop_button.pack(pady=5)
+
+            self.running = False
+            self.last_sent_time = None
+
+        def log(self, text):
+            now = datetime.now().strftime('%H:%M:%S')
+            self.output.insert(tk.END, f"[{now}] {text}\n")
+            self.output.see(tk.END)
+
+        def start_monitoring(self):
+            if not self.running:
+                self.running = True
+                self.start_button.config(state=tk.DISABLED)
+                self.stop_button.config(state=tk.NORMAL)
+                self.log("🔄 Starte Live-FVG-Scan und Überwachung...")
+                threading.Thread(target=self.monitor_loop, daemon=True).start()
+
+        def stop_monitoring(self):
+            self.running = False
+            self.stop_button.config(state=tk.DISABLED)
+            self.start_button.config(state=tk.NORMAL)
+            self.log("🛑 Überwachung gestoppt.")
+
+        def monitor_loop(self):
+            while self.running:
+                try:
+                    self.log("🔍 Suche nach neuen FVG-Signalen...")
+                    result = evaluate_fvg_strategy_with_result()
+
+                    if result and (self.last_sent_time is None or result['zeit'] != self.last_sent_time):
+                        self.last_sent_time = result['zeit']
+                        self.log(f"📈 Neues Signal: {result['typ'].upper()} @ {result['entry']:.2f}")
+                        self.log(f"   SL: {result['sl']:.2f} | TP: {result['tp']:.2f} | Zeit: {result['zeit'].strftime('%H:%M')}")
+                        self.log("📤 Sende Telegram-Signal...")
+                        send_telegram_signal(result['entry'], result['sl'], result['tp'], result['typ'], result['zeit'])
+                    else:
+                        self.log("ℹ️ Kein neues Setup erkannt – kein Signal gesendet.")
+
+                    self.log("📡 Überprüfe aktive Trades...")
+                    run_with_monitoring()
+                    self.log("🧠 Überwachung abgeschlossen.")
+                except Exception as e:
+                    self.log(f"❌ Fehler: {e}")
+                time.sleep(50)
+
+    def run_gui():
+        root = tk.Tk()
+        app = DAXFVGApp(root)
+        root.mainloop()
+
+# ==================== Programmstart ====================
+def main():
+    if GUI_AVAILABLE:
+        run_gui()
     else:
-        print("ℹ️ Kein FVG-Signal gefunden.")
-
-    print("📡 Auswertung offener Signale...")
-    run_with_monitoring(df)
-
-def shutdown():
-    print("⏱️ Zeit abgelaufen – Programm wird beendet.")
-    sys.exit(0)
+        headless_loop()
 
 if __name__ == "__main__":
-    print("🚀 Starte Headless DAX-FVG-Bot...")
-    send_start_message()
-
-    df = get_xdax_df()
-    if df is not None:
-        run_once(df)
-    else:
-        print("❌ Kein gültiger DataFrame – Abbruch.")
-
-    time.sleep(30)  # ⏱
-    shutdown()
+    main()
