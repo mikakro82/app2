@@ -2,7 +2,7 @@ name: Alle 10 Minuten Mo–Fr (08–21 Uhr DE)
 
 on:
   schedule:
-       - cron: '30 8 * * 1-5'
+    - cron: '30 8 * * 1-5'
     - cron: '35 8 * * 1-5'
     - cron: '40 8 * * 1-5'
     - cron: '45 8 * * 1-5'
