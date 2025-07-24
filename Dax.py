@@ -120,20 +120,5 @@ def main():
 if __name__ == "__main__":
     main()
 
-def shutdown():
-    print("⏱️ Zeit abgelaufen – Programm wird beendet.")
-    sys.exit(0)
 
-if __name__ == "__main__":
-    print("🚀 Starte Headless DAX-FVG-Bot...")
-    send_start_message()
-
-    df = get_xdax_df()
-    if df is not None:
-        run_once(df)
-    else:
-        print("❌ Kein gültiger DataFrame – Abbruch.")
-
-    time.sleep(30)  # ⏱
-    shutdown()
 
