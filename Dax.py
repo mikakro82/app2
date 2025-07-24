@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-day.py - Läuft als Headless-Service oder GUI. Automatische Umrechnung von XDAXI auf GDAXI für Telegram-Signale.
-Beendet sich selbst nach 50 Sekunden Laufzeit.
-"""
 import os
 import sys
 import time
@@ -52,9 +47,21 @@ def headless_run():
         return
 
     if result:
-        entry = float(result['entry'])
-        sl = float(result['sl'])
-        tp = float(result['tp'])
+        raw_entry = result['entry']
+        try:
+            entry = float(raw_entry.item())
+        except Exception:
+            entry = float(raw_entry)
+        raw_sl = result['sl']
+        try:
+            sl = float(raw_sl.item())
+        except Exception:
+            sl = float(raw_sl)
+        raw_tp = result['tp']
+        try:
+            tp = float(raw_tp.item())
+        except Exception:
+            tp = float(raw_tp)
         typ = result['typ']
         zeit = result['zeit']
 
