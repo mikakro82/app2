@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 import yfinance as yf
 from strategy_fvg_xdax_l_full_extended import evaluate_fvg_strategy_with_result, run_with_monitoring
-from telegram_notifier import send_telegram_signal, evaluate_pending_signals
+from telegram_notifier import send_telegram_signal, evaluate_pending_signals 
 import os
 
 def get_real_dax():
