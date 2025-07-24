@@ -117,7 +117,7 @@ if __name__ == "__main__":
     # Start je nach Umgebung
     if os.environ.get("DISPLAY", "") == "":
         print("⚠️ Kein DISPLAY gefunden – GUI wird übersprungen.")
-        from strategy_fvg_xdax_l_full_extended import get_dax_etf_xdax_once, evaluate_fvg_strategy
+        from strategy_fvg_xdax_l_full_extended import get_dax_etf_xdax as get_dax_etf_xdax_once, evaluate_fvg_strategy
         df = get_dax_etf_xdax_once()
         evaluate_fvg_strategy(df)
         run_with_monitoring(df)
