@@ -2,7 +2,7 @@
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-from telegram_notifier import send_telegram_signal, evaluate_pending_signals
+from telegram_notifier import send_telegram_signal, update_signal_result, send_daily_summary
 
 def get_dax_etf_xdax(interval='60m'):
     try:
@@ -57,7 +57,7 @@ def run_with_monitoring():
         return
 
     last_price = df['Close'].iloc[-1]
-    evaluate_pending_signals(last_price)
+    update_signal_result(last_price)
 
     now = datetime.now()
     if now.strftime("%H:%M") == "17:00":
