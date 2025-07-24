@@ -73,6 +73,5 @@ def run_with_monitoring():
         send_daily_summary()
 
 if __name__ == "__main__":
-    # Für lokalen Test
     evaluate_fvg_strategy_with_result()
     run_with_monitoring()
