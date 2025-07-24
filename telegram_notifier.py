@@ -86,7 +86,7 @@ def evaluate_pending_signals(price_now):
             data = []
 
     changed = False
-    now = datetime.now()
+    now = datetime.now(signal_time.tzinfo)  # gleiche Zeitzone wie das Signal
     for signal in data:
         if signal["status"] != "pending":
             continue
