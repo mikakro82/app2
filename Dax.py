@@ -4,7 +4,6 @@ day.py - Läuft als Headless-Service oder GUI. Automatische Umrechnung von XDAXI
 Beendet sich selbst nach 50 Sekunden Laufzeit.
 """
 import os
-import sys
 import time
 import threading
 from datetime import datetime
@@ -44,7 +43,117 @@ def get_real_dax():
 def headless_run():
     schedule_exit()
     now = datetime.now().strftime('%H:%M:%S')
-    print(f"[{now}] 📈 XDAXI: {entry:.2f} | GDAXI: {float(ge):.2f}")
+    print(f"[{now}] 🔍 Suche nach FVG-Signal...")
+    try:
+        result = evaluate_fvg_strategy_with_result()
+    except Exception as e:
+        print(f"[{now}] ❌ Fehler Strategie-Auswertung: {e}")
+        return
+
+    if result:
+        # Werte extrahieren und zu Python-Float konvertieren
+        raw_entry = result['entry']
+        try:
+            entry = float(raw_entry.item())
+        except Exception:
+            entry = float(raw_entry)
+        raw_sl = result['sl']
+        try:
+            sl = float(raw_sl.item())
+        except Exception:
+            sl = float(raw_sl)
+        raw_tp = result['tp']
+        try:
+            tp = float(raw_tp.item())
+        except Exception:
+            tp = float(raw_tp)
+        typ = result['typ']
+        zeit = result['zeit']
+
+        real = get_real_dax()
+        if real is not None:
+            factor = real / entry
+            ge = entry * factor
+            gs = sl * factor
+            gt = tp * factor
+            print(f"[{now}] 📈 XDAXI: {entry:.2f} | GDAXI: {ge:.2f}")
+            try:
+                send_telegram_signal(float(ge), float(gs), float(gt), typ, zeit)
+                print(f"[{now}] 📤 Telegram (umgerechnet) gesendet.")
+            except Exception as e:
+                print(f"[{now}] ❌ Sendefehler: {e}")
+        else:
+            print(f"[{now}] ⚠️ Kein GDAXI verfügbar - sende XDAXI-Signal: Entry={entry:.2f}, SL={sl:.2f}, TP={tp:.2f}")
+            send_telegram_signal(entry, sl, tp, typ, zeit)
+    else:
+        print(f"[{now}] ℹ️ Kein neues Signal.")
+
+    print(f"[{now}] 📡 Überprüfe aktive Trades...")
+    try:
+        run_with_monitoring()
+        print(f"[{now}] ✅ Monitoring abgeschlossen.")
+    except Exception as e:
+        print(f"[{now}] ❌ Monitoring-Fehler: {e}")
+
+# ==================== GUI-Modus ====================
+if GUI_AVAILABLE:
+    class DAXFVGApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("📈 DAX FVG Bot - Live & Monitoring")
+            self.root.geometry("800x600")
+            self.output = tk.Text(root, wrap=tk.WORD, height=30)
+            self.output.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+            self.start_button = tk.Button(root, text="🟢 Einmal-Run", command=self.run_once)
+            self.start_button.pack(pady=5)
+            self.running = False
+
+        def log(self, msg):
+            t = datetime.now().strftime('%H:%M:%S')
+            self.output.insert(tk.END, f"[{t}] {msg}\n")
+            self.output.see(tk.END)
+
+        def run_once(self):
+            if not self.running:
+                self.running = True
+                self.start_button.config(state=tk.DISABLED)
+                schedule_exit(self.root)
+                threading.Thread(target=self.task, daemon=True).start()
+
+        def task(self):
+            self.log("🔍 Suche nach FVG-Signal...")
+            try:
+                result = evaluate_fvg_strategy_with_result()
+            except Exception as e:
+                self.log(f"❌ Fehler Strategie: {e}")
+                return
+
+            if result:
+                raw_entry = result['entry']
+                try:
+                    entry = float(raw_entry.item())
+                except Exception:
+                    entry = float(raw_entry)
+                raw_sl = result['sl']
+                try:
+                    sl = float(raw_sl.item())
+                except Exception:
+                    sl = float(raw_sl)
+                raw_tp = result['tp']
+                try:
+                    tp = float(raw_tp.item())
+                except Exception:
+                    tp = float(raw_tp)
+                typ = result['typ']
+                zeit = result['zeit']
+                real = get_real_dax()
+
+                if real is not None:
+                    factor = real / entry
+                    ge = entry * factor
+                    gs = sl * factor
+                    gt = tp * factor
+                    self.log(f"GDAXI: {real:.2f}, Signal GDAXI: {ge:.2f}")
                     send_telegram_signal(float(ge), float(gs), float(gt), typ, zeit)
                     self.log("📤 Telegram (GDAXI) gesendet.")
                 else:
