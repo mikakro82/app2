@@ -47,7 +47,7 @@ def save_signal_log(time, entry, sl, tp, quelle):
             s["time"][:16] == result["time"][:16] and
             s.get("quelle") == result["quelle"]
         ):
-            return  # Duplikat – nicht speichern
+            return
 
     data.append(result)
     with open(LOG_FILE, "w", encoding="utf-8") as f:
@@ -64,13 +64,13 @@ def send_telegram_signal(entry, sl, tp, direction, time, quelle="xdax"):
         rr_ratio = sl_pct = tp_pct = 0
 
     message = (
-        f"📊 *FVG {direction.upper()} Signal*\n"
-        f"📍 *Quelle*: {quelle.upper()}\n"
-        f"🕒 Zeit: {time}\n"
-        f"🎯 Entry: `{entry:.2f}`\n"
-        f"🛡️ SL: `{sl:.2f}` ({sl_pct}%)\n"
-        f"🏁 TP: `{tp:.2f}` ({tp_pct}%)\n"
-        f"📐 CRV: `{rr_ratio}:1`"
+        f"\ud83d\udcca *FVG {direction.upper()} Signal*\n"
+        f"\ud83d\udd39 *Quelle*: {quelle.upper()}\n"
+        f"\ud83d\udd52 Zeit: {time}\n"
+        f"\ud83c\udfaf Entry: `{entry:.2f}`\n"
+        f"\ud83d\udee1\ufe0f SL: `{sl:.2f}` ({sl_pct}%)\n"
+        f"\ud83c\udfc1 TP: `{tp:.2f}` ({tp_pct}%)\n"
+        f"\ud83d\udcc0 CRV: `{rr_ratio}:1`"
     )
     save_signal_log(time, entry, sl, tp, quelle)
     send_telegram_message(message)
@@ -90,18 +90,23 @@ def evaluate_pending_signals(price_now):
     for signal in data:
         if signal["status"] != "pending":
             continue
+
+        # Ignoriere neue Signale
+        if datetime.fromisoformat(signal["time"]) > now - timedelta(minutes=1):
+            continue
+
         entry = signal["entry"]
         sl = signal["sl"]
         tp = signal["tp"]
         if price_now >= tp:
             signal["status"] = "take_profit"
             signal["triggered_at"] = now.isoformat()
-            send_telegram_message(f"✅ *Take Profit erreicht!* Entry: `{entry}` → TP: `{tp}`")
+            send_telegram_message(f"\u2705 *Take Profit erreicht!* Entry: `{entry}` \u2192 TP: `{tp}`")
             changed = True
         elif price_now <= sl:
             signal["status"] = "stop_loss"
             signal["triggered_at"] = now.isoformat()
-            send_telegram_message(f"🛑 *Stop Loss erreicht!* Entry: `{entry}` → SL: `{sl}`")
+            send_telegram_message(f"\ud83d\uded1 *Stop Loss erreicht!* Entry: `{entry}` \u2192 SL: `{sl}`")
             changed = True
 
     if changed:
@@ -110,7 +115,7 @@ def evaluate_pending_signals(price_now):
 
 def send_daily_summary():
     if not os.path.exists(LOG_FILE):
-        send_telegram_message("📊 Keine Signal-Daten für die Tagesauswertung verfügbar.")
+        send_telegram_message("\ud83d\udcca Keine Signal-Daten f\u00fcr die Tagesauswertung verf\u00fcgbar.")
         return
 
     with open(LOG_FILE, "r", encoding="utf-8") as f:
@@ -140,10 +145,10 @@ def send_daily_summary():
                     stats[k]["tp" if s["status"] == "take_profit" else "sl"] += 1
 
     summary = (
-        f"📈 *Tagesauswertung {now.strftime('%d.%m.%Y')}*\n"
-        f"📅 Heute: ✅ {stats['day']['tp']} TP | 🛑 {stats['day']['sl']} SL\n"
-        f"🗓️ Woche: ✅ {stats['week']['tp']} TP | 🛑 {stats['week']['sl']} SL\n"
-        f"📆 Monat: ✅ {stats['month']['tp']} TP | 🛑 {stats['month']['sl']} SL\n"
-        f"📊 Jahr: ✅ {stats['year']['tp']} TP | 🛑 {stats['year']['sl']} SL"
+        f"\ud83d\udcc8 *Tagesauswertung {now.strftime('%d.%m.%Y')}*\n"
+        f"\ud83d\uddd5\ufe0f Heute: \u2705 {stats['day']['tp']} TP | \ud83d\uded1 {stats['day']['sl']} SL\n"
+        f"\ud83d\uddd3\ufe0f Woche: \u2705 {stats['week']['tp']} TP | \ud83d\uded1 {stats['week']['sl']} SL\n"
+        f"\ud83d\udcc6 Monat: \u2705 {stats['month']['tp']} TP | \ud83d\uded1 {stats['month']['sl']} SL\n"
+        f"\ud83d\udcca Jahr: \u2705 {stats['year']['tp']} TP | \ud83d\uded1 {stats['year']['sl']} SL"
     )
     send_telegram_message(summary)
