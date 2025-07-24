@@ -40,13 +40,12 @@ def save_signal_log(time, entry, sl, tp):
             except:
                 data = []
 
-    # Duplikate verhindern
     for s in data:
         if (abs(s["entry"] - result["entry"]) < 0.01 and
             abs(s["sl"] - result["sl"]) < 0.01 and
             abs(s["tp"] - result["tp"]) < 0.01 and
-            s["time"] == result["time"]):
-            return  # bereits vorhanden
+            s["time"][:16] == result["time"][:16]):
+            return
 
     data.append(result)
     with open(LOG_FILE, "w", encoding="utf-8") as f:
@@ -63,18 +62,22 @@ def send_telegram_signal(entry, sl, tp, direction, time):
         rr_ratio = sl_pct = tp_pct = 0
 
     message = (
-        f"📊 *FVG {direction.upper()} Signal*\n"
-        f"🕒 Zeit: {time}\n"
-        f"🎯 Entry: `{entry:.2f}`\n"
-        f"🛡️ SL: `{sl:.2f}` ({sl_pct}%)\n"
-        f"🏁 TP: `{tp:.2f}` ({tp_pct}%)\n"
+        f"📊 *FVG {direction.upper()} Signal*
+"
+        f"🕒 Zeit: {time}
+"
+        f"🎯 Entry: `{entry:.2f}`
+"
+        f"🛡️ SL: `{sl:.2f}` ({sl_pct}%)
+"
+        f"🏁 TP: `{tp:.2f}` ({tp_pct}%)
+"
         f"📐 CRV: `{rr_ratio}:1`"
     )
     save_signal_log(time, entry, sl, tp)
     send_telegram_message(message)
 
 def evaluate_pending_signals(price_now):
-    """Prüft alle offenen Signale auf TP/SL nach Kerzenabruf."""
     if not os.path.exists(LOG_FILE):
         return
 
@@ -107,9 +110,7 @@ def evaluate_pending_signals(price_now):
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
-
 def send_daily_summary():
-    """Sendet eine tägliche Übersicht der TP/SL-Statistik."""
     if not os.path.exists(LOG_FILE):
         send_telegram_message("📊 Keine Signal-Daten für die Tagesauswertung verfügbar.")
         return
@@ -141,10 +142,14 @@ def send_daily_summary():
                     stats[k]["tp" if s["status"] == "take_profit" else "sl"] += 1
 
     summary = (
-        f"📈 *Tagesauswertung {now.strftime('%d.%m.%Y')}*\n"
-        f"📅 Heute: ✅ {stats['day']['tp']} TP | 🛑 {stats['day']['sl']} SL\n"
-        f"🗓️ Woche: ✅ {stats['week']['tp']} TP | 🛑 {stats['week']['sl']} SL\n"
-        f"📆 Monat: ✅ {stats['month']['tp']} TP | 🛑 {stats['month']['sl']} SL\n"
+        f"📈 *Tagesauswertung {now.strftime('%d.%m.%Y')}*
+"
+        f"📅 Heute: ✅ {stats['day']['tp']} TP | 🛑 {stats['day']['sl']} SL
+"
+        f"🗓️ Woche: ✅ {stats['week']['tp']} TP | 🛑 {stats['week']['sl']} SL
+"
+        f"📆 Monat: ✅ {stats['month']['tp']} TP | 🛑 {stats['month']['sl']} SL
+"
         f"📊 Jahr: ✅ {stats['year']['tp']} TP | 🛑 {stats['year']['sl']} SL"
     )
     send_telegram_message(summary)
