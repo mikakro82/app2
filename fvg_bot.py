@@ -5,9 +5,13 @@ import os
 import json
 import math
 import requests
+from dotenv import load_dotenv
 
-BOT_TOKEN = "8170146997:AAE5P3SIi_L06iYkke35s7A1EP77KftkWVI"
-CHAT_ID   = "1596720374"
+load_dotenv()  # .env-Datei laden
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID   = os.getenv("CHAT_ID")
+
 LOG_FILE  = "fvg_signal_log.json"
 
 def send_telegram_signal(entry, sl, tp, direction, time):
